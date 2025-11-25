@@ -28,7 +28,7 @@ async function analyzeTextWithGemini(text: string) {
     const currentTime = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
     
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json", 
       },
