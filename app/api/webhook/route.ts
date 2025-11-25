@@ -43,14 +43,14 @@ async function analyzeTextWithGemini(text: string) {
       意圖分類 (intent)：
       - 'expense': 如果使用者輸入的是一筆費用紀錄 (包含金額和品項)。
       - 'retrieval': 如果使用者要求查看、總結或回傳紀錄 (例如：回傳我的紀錄、今天花多少)。
-      - 'other': 如果是問候、無關緊要或無法判斷的輸入。
+
 
       費用資料提取規則：
       - 僅在 intent 為 'expense' 時才需提取 item, amount, category。
       - 類別判斷規則不變 (時間判斷、關鍵字關聯等)。
 
       請回傳統一的 JSON 格式：
-      {"intent": "expense" | "retrieval" | "other", "item": "string | null", "amount": "number | null", "category": "string | null"}
+      {"intent": "expense" | "retrieval", "item": "string | null", "amount": "number | null", "category": "string | null"}
       請確保 amount 始終為純數字或 null。
     `; // 🔴 PROMPT 更新：包含意圖判斷與範例
 
