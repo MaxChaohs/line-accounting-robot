@@ -47,17 +47,6 @@ async function analyzeTextWithGemini(text: string) {
 
       費用資料提取規則：
       - 僅在 intent 為 'expense' 時才需提取 item, amount, category。
-      
-      類別判斷優先級：
-      1. 如果使用者有明確指定類別 (例如: 分類娛樂)，**或是在輸入中明確提到以下關鍵詞之一：[早餐, 午餐, 晚餐, 宵夜]**，則優先以此為類別名稱。
-      2. 如果品項有強烈的類別屬性 (如: 加油->交通, 衛生紙->日用)，使用該屬性。
-      3. 如果上述都不明確，請根據時間判斷：
-        - 05:00-10:30 -> 早餐
-        - 11:00-14:00 -> 午餐
-        - 14:00-17:00 -> 下午茶
-        - 17:00-20:00 -> 晚餐
-        - 20:00-04:00 -> 宵夜
-      4. 其他歸類為 "其他"。
 
       請回傳統一的 JSON 格式：
       {"intent": "expense" | "retrieval" | "other", "item": "string | null", "amount": "number | null", "category": "string | null"}
