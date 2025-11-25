@@ -2,6 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextPage } from 'next';
 
+export const revalidate = 0;
+
 // 1. 定義資料結構
 interface Expense {
   id: number;
