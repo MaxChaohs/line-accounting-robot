@@ -115,22 +115,12 @@ const handleEvent = async (event: webhook.Event) => {
 
       // A. 意圖判斷：retrieval (回傳紀錄)
       if (intent === 'retrieval') {
-          const { data: records, error } = await supabase
-              .from('expenses')
-              .select('item_name, amount, category, created_at')
-              .eq('user_id', userId)
-              .order('created_at', { ascending: false })
-              .limit(5); // 限制回傳最近 5 筆
+        // ⚠️ 注意：DEPLOYMENT_URL 必須在 Vercel 環境變數中設定！
+        const DEPLOYMENT_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+        
+        const personalReportUrl = `${DEPLOYMENT_URL}/report/${userId}`;
 
-          if (error || !records || records.length === 0) {
-              replyText = "🔍 抱歉，找不到您最近的記帳紀錄。";
-          } else {
-              const summary = records.map(r => 
-                  `\n- ${r.category}: ${r.item_name} $${r.amount}`
-              ).join('');
-              
-              replyText = `📊 您最近的 ${records.length} 筆紀錄：${summary}`;
-          }
+        replyText = `📊 請點擊下方連結，查看您完整的記帳報表：\n\n${personalReportUrl}\n\n(此連結僅供您個人查看)`;
       
       // B. 意圖判斷：expense (新增紀錄)
       } else if (intent === 'expense') {
@@ -148,7 +138,7 @@ const handleEvent = async (event: webhook.Event) => {
             
           } else {
             // LLM 判斷為 expense 但無法提取金額
-            replyText = `❓ LLM 判斷這是記帳需求，但找不到明確金額。請確認輸入格式喔！`;
+            replyText = `❓ 我猜這是一個記帳需求，但找不到明確金額。請確認是否輸入金額喔！`;
           }
       
       // C. 意圖判斷：other (其他)
