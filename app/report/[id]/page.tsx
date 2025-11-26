@@ -95,7 +95,7 @@ const UserReportPage = async ({
 
     return (
         <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto', fontFamily: 'Arial, sans-serif' }}>
-            <h1>📊 個人記帳報表 (您的專屬紀錄)</h1>
+            <h1>📊 個人記帳報表</h1>
             <p>您的使用者 ID Hash: <code>{userId}</code></p>
             <p>目前紀錄總數: **{expenses.length} 筆**。**總金額:** NT$ {totalAmount}</p>
 
@@ -143,7 +143,7 @@ const UserReportPage = async ({
                         {expenses.length > 0 ? (
                             expenses.map((exp) => (
                                 <tr key={exp.id}>
-                                    <td style={tableCellStyle}>{new Date(exp.created_at).toLocaleString('zh-TW')}</td>
+                                    <td style={tableCellStyle}>{new Date(exp.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' })}</td>
                                     <td style={{...tableCellStyle, maxWidth: '200px', overflowWrap: 'break-word'}}>{exp.raw_text}</td>
                                     <td style={tableCellStyle}>{exp.item_name}</td>
                                     <td style={{ ...tableCellStyle, textAlign: 'right', fontWeight: 'bold' }}>{exp.amount.toLocaleString()}</td>
