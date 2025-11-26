@@ -115,10 +115,13 @@ const handleEvent = async (event: webhook.Event) => {
 
       // A. 意圖判斷：retrieval (回傳紀錄)
       if (intent === 'retrieval') {
-        // ⚠️ 注意：DEPLOYMENT_URL 必須在 Vercel 環境變數中設定！
-        const DEPLOYMENT_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+          
+        // 🔴 修正：優先使用自訂的 LINE_BOT_BASE_URL 變數
+        // 確保使用您希望的乾淨生產網址
+        const BASE_URL = process.env.LINE_BOT_BASE_URL || 
+                         (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
         
-        const personalReportUrl = `${DEPLOYMENT_URL}/report/${userId}`;
+        const personalReportUrl = `${BASE_URL}/report/${userId}`;
 
         replyText = `📊 請點擊下方連結，查看您完整的記帳報表：\n\n${personalReportUrl}\n\n(此連結僅供您個人查看)`;
       
