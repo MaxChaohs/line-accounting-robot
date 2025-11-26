@@ -60,6 +60,7 @@ Bot 會自動解析您的「品項」和「金額」。
 ---
 **馬上開始使用：** 請在 Line 聊天室中，輸入您的第一筆開銷吧！
 
+使用上有問題請回報：[maxchao1217@gmail.com](mailto:maxchao1217@gmail.com)
 ---
 
 # 📖 Line Bot 記帳小幫手 開發者紀錄
@@ -262,6 +263,288 @@ wphw6/
 - **PostgreSQL**: 強大的關聯式資料庫
 - **即時功能**: 未來可擴展即時更新功能
 - **易於部署**: 無需自行管理資料庫伺服器
+
+## 💻 本地開發環境設置
+
+### 前置需求
+
+- **Node.js**: >= 18.0.0
+- **npm**: >= 9.0.0 或 **yarn**: >= 1.22.0
+- **Git**: 用於版本控制
+- **LINE Developers 帳號**: 用於建立 Bot Channel
+- **Google AI Studio 帳號**: 用於取得 Gemini API Key
+- **Supabase 帳號**: 用於建立資料庫
+
+### 步驟 1: 克隆專案
+
+```bash
+# 克隆專案到本地
+git clone https://github.com/MaxChaohs/line-accounting-robot.git
+cd line-accounting-robot
+
+# 或使用 SSH
+git clone git@github.com:MaxChaohs/line-accounting-robot.git
+cd line-accounting-robot
+```
+
+### 步驟 2: 安裝依賴
+
+```bash
+# 使用 npm
+npm install
+
+# 或使用 yarn
+yarn install
+```
+
+### 步驟 3: 設置環境變數
+
+在專案根目錄創建 `.env.local` 檔案：
+
+```bash
+# Windows (PowerShell)
+New-Item -Path .env.local -ItemType File
+
+# Windows (CMD)
+type nul > .env.local
+
+# macOS / Linux
+touch .env.local
+```
+
+然後在 `.env.local` 中填入以下環境變數：
+
+```env
+# LINE Bot 設定
+CHANNEL_ACCESS_TOKEN=your_line_channel_access_token
+CHANNEL_SECRET=your_line_channel_secret
+
+# Google Gemini AI
+GEMINI_API_KEY=your_gemini_api_key
+
+# Supabase 設定
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+```
+
+#### 如何取得環境變數
+
+**LINE Bot 設定**:
+1. 前往 [LINE Developers Console](https://developers.line.biz/console/)
+2. 登入並創建 Provider（如果還沒有）
+3. 創建新的 Messaging API Channel
+4. 在 Channel 設定頁面：
+   - **Channel Access Token**: 點擊 "Issue" 按鈕生成
+   - **Channel Secret**: 在 "Basic settings" 頁面查看
+
+**Google Gemini API**:
+1. 前往 [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. 使用 Google 帳號登入
+3. 點擊 "Create API Key"
+4. 選擇或創建 Google Cloud 專案
+5. 複製生成的 API Key
+
+**Supabase 設定**:
+1. 前往 [Supabase](https://supabase.com/)
+2. 登入並創建新專案
+3. 等待專案初始化完成（約 2 分鐘）
+4. 在專案 Dashboard 中：
+   - 前往 **Settings > API**
+   - 複製 **Project URL**（`SUPABASE_URL`）
+   - 複製 **service_role** 的 **Secret Key**（`SUPABASE_SERVICE_ROLE_KEY`）
+   - ⚠️ **注意**: 請使用 `service_role` key，而非 `anon` key，因為需要完整資料庫權限
+
+### 步驟 4: 設置資料庫
+
+1. 在 Supabase Dashboard 中，前往 **SQL Editor**
+2. 執行以下 SQL 創建資料表：
+
+```sql
+-- 創建 expenses 資料表
+CREATE TABLE expenses (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  item_name TEXT NOT NULL,
+  amount NUMERIC(10, 2) NOT NULL,
+  category TEXT NOT NULL,
+  raw_text TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 創建索引以提升查詢效能
+CREATE INDEX idx_user_id ON expenses(user_id);
+CREATE INDEX idx_created_at ON expenses(created_at);
+
+-- 驗證資料表是否創建成功
+SELECT * FROM expenses LIMIT 1;
+```
+
+### 步驟 5: 啟動開發伺服器
+
+```bash
+# 使用 npm
+npm run dev
+
+# 或使用 yarn
+yarn dev
+```
+
+開發伺服器將在 [http://localhost:3000](http://localhost:3000) 啟動。
+
+### 步驟 6: 本地測試 Webhook（可選）
+
+由於 LINE Webhook 需要 HTTPS，本地開發時需要使用隧道工具：
+
+#### 使用 ngrok（推薦）
+
+1. **安裝 ngrok**:
+   ```bash
+   # macOS (使用 Homebrew)
+   brew install ngrok
+   
+   # 或前往 https://ngrok.com/download 下載
+   ```
+
+2. **啟動 ngrok 隧道**:
+   ```bash
+   # 在另一個終端視窗執行
+   ngrok http 3000
+   ```
+
+3. **複製 HTTPS URL**:
+   - ngrok 會顯示類似 `https://xxxx-xxxx-xxxx.ngrok.io` 的 URL
+   - 複製此 URL
+
+4. **設置 LINE Webhook**:
+   - 前往 LINE Developers Console
+   - 在 Channel 設定中找到 "Webhook settings"
+   - 設置 Webhook URL: `https://xxxx-xxxx-xxxx.ngrok.io/api/webhook`
+   - 點擊 "Verify" 驗證
+   - 啟用 "Use webhook"
+
+5. **測試**:
+   - 在 LINE 中發送訊息給 Bot
+   - 檢查終端視窗的日誌輸出
+   - 檢查 Supabase 資料庫是否有新資料
+
+#### 使用其他隧道工具
+
+- **Cloudflare Tunnel**: `cloudflared tunnel --url http://localhost:3000`
+- **localtunnel**: `npx localtunnel --port 3000`
+
+## 🚀 部署到 Vercel
+
+### 方法一：透過 GitHub 自動部署（推薦）
+
+#### 步驟 1: 推送代碼到 GitHub
+
+```bash
+# 初始化 Git（如果還沒有）
+git init
+
+# 添加所有檔案
+git add .
+
+# 提交變更
+git commit -m "Initial commit"
+
+# 設置遠端倉庫（替換為你的 GitHub 倉庫 URL）
+git remote add origin https://github.com/MaxChaohs/line-accounting-robot.git
+
+# 推送到 GitHub
+git branch -M main
+git push -u origin main
+```
+
+#### 步驟 2: 在 Vercel 導入專案
+
+1. 前往 [Vercel](https://vercel.com/)
+2. 使用 GitHub 帳號登入
+3. 點擊 **"Add New Project"**
+4. 選擇你的 GitHub 倉庫 `line-accounting-robot`
+5. Vercel 會自動檢測 Next.js 專案
+
+#### 步驟 3: 設置環境變數
+
+在 Vercel 專案設定中：
+
+1. 前往 **Settings > Environment Variables**
+2. 添加以下環境變數（與 `.env.local` 相同）：
+
+| 變數名稱 | 值 | 說明 |
+|---------|-----|------|
+| `CHANNEL_ACCESS_TOKEN` | `your_line_channel_access_token` | LINE Bot Channel Access Token |
+| `CHANNEL_SECRET` | `your_line_channel_secret` | LINE Bot Channel Secret |
+| `GEMINI_API_KEY` | `your_gemini_api_key` | Google Gemini API Key |
+| `SUPABASE_URL` | `your_supabase_url` | Supabase Project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | `your_service_role_key` | Supabase Service Role Key |
+
+3. 為每個環境變數選擇適用的環境：
+   - ✅ **Production**（生產環境）
+   - ✅ **Preview**（預覽環境）
+   - ✅ **Development**（開發環境，可選）
+
+#### 步驟 4: 部署
+
+1. 點擊 **"Deploy"** 按鈕
+2. 等待建置完成（約 2-5 分鐘）
+3. 部署成功後，記下部署網址（例如：`https://line-accounting-robot.vercel.app`）
+
+#### 步驟 5: 設置 LINE Webhook
+
+1. 前往 [LINE Developers Console](https://developers.line.biz/console/)
+2. 選擇你的 Channel
+3. 在 **Messaging API** 設定中找到 **Webhook settings**
+4. 設置 Webhook URL: `https://your-project.vercel.app/api/webhook`
+5. 點擊 **"Verify"** 驗證 Webhook
+6. 啟用 **"Use webhook"**
+
+#### 步驟 6: 測試部署
+
+1. 在 LINE 中發送訊息給 Bot
+2. 檢查 Vercel 的 **Functions** 日誌確認是否有錯誤
+3. 檢查 Supabase 資料庫確認資料是否正確儲存
+
+### 方法二：使用 Vercel CLI
+
+```bash
+# 安裝 Vercel CLI
+npm i -g vercel
+
+# 登入 Vercel
+vercel login
+
+# 部署到預覽環境
+vercel
+
+# 部署到生產環境
+vercel --prod
+```
+
+#### 使用 CLI 設置環境變數
+
+```bash
+# 逐一添加環境變數
+vercel env add CHANNEL_ACCESS_TOKEN
+vercel env add CHANNEL_SECRET
+vercel env add GEMINI_API_KEY
+vercel env add SUPABASE_URL
+vercel env add SUPABASE_SERVICE_ROLE_KEY
+
+# 或使用 .env 檔案批量導入（需要先創建 .env 檔案）
+vercel env pull .env.local
+```
+
+### 部署後檢查清單
+
+- [ ] 環境變數已正確設置
+- [ ] 建置成功無錯誤
+- [ ] LINE Webhook URL 已更新
+- [ ] Webhook 驗證成功
+- [ ] 測試記帳功能正常
+- [ ] 測試查詢功能正常
+- [ ] 檢查 Vercel 函數日誌無錯誤
+- [ ] 檢查 Supabase 資料庫連線正常
 
 ## 🔐 環境變數配置
 
