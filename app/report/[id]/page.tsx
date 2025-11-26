@@ -2,8 +2,10 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { NextPage } from 'next';
+// 🔴 引入 Client Component
+import ChartComponent from '@/components/ChartComponent'; 
 
-// 關鍵設定：強制關閉快取，確保用戶每次查看的資料都是最新的
+
 export const revalidate = 0; 
 
 interface Expense {
@@ -22,32 +24,30 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY! 
 );
 
-// 🔴 新增函數：只獲取該用戶使用過的分類，用於下拉選單
+// 🔴 新增函數：只獲取該用戶使用過的分類，用於下拉選單 (保持不變)
 async function getCategoriesForUser(userId: string): Promise<string[]> {
     const { data, error } = await supabase
         .from('expenses')
         .select('category')
-        .eq('user_id', userId); // 僅篩選該用戶的分類
+        .eq('user_id', userId); 
 
     if (error) {
         console.error("Error fetching user categories:", error);
         return [];
     }
     
-    // 從結果中提取不重複的 category
     const uniqueCategories = Array.from(new Set(data.map(item => item.category)));
     return uniqueCategories;
 }
 
-// 🔴 修改函數：接受 category 參數進行篩選
+// 🔴 修改函數：接受 category 參數進行篩選 (保持不變)
 async function getExpensesByUserId(userId: string, filterCategory: string): Promise<Expense[]> {
     let query = supabase
         .from('expenses')
         .select('*')
-        .eq('user_id', userId) // 必須保留此行，確保只能查到自己的
+        .eq('user_id', userId) 
         .order('created_at', { ascending: false });
 
-    // 關鍵篩選：如果指定了類別，則加入篩選條件
     if (filterCategory && filterCategory !== 'all') {
         query = query.eq('category', filterCategory);
     }
@@ -61,22 +61,35 @@ async function getExpensesByUserId(userId: string, filterCategory: string): Prom
     return data as Expense[];
 }
 
-// Server Component (Page): 讀取 id (從 URL 路徑) 和 category (從 URL 查詢)
+// Server Component (Page)
 const UserReportPage = async ({ 
     params,
-    searchParams, // 🔴 新增：讀取查詢參數
+    searchParams, 
 }: { 
     params: { id: string },
-    searchParams: { category?: string } // 🔴 新增：讀取 category 參數
+    searchParams: { category?: string } 
 }) => {
     const userId = params.id;
-    const filterCategory = searchParams.category || 'all'; // 獲取篩選值
+    const filterCategory = searchParams.category || 'all'; 
 
     // 平行獲取資料：用戶的費用紀錄 和 用戶的類別列表
     const [expenses, categories] = await Promise.all([
         getExpensesByUserId(userId, filterCategory),
         getCategoriesForUser(userId)
     ]);
+    
+    // 🔴 數據聚合邏輯：計算每個分類的總金額 (Server-side calculation)
+    const categoryTotals = expenses.reduce((acc, exp) => {
+        const categoryKey = exp.category || '未分類';
+        acc[categoryKey] = (acc[categoryKey] || 0) + exp.amount;
+        return acc;
+    }, {} as Record<string, number>);
+
+    // 將聚合結果轉換為適合圖表使用的陣列格式
+    const chartData = Object.entries(categoryTotals).map(([name, value]) => ({
+        name,
+        value,
+    }));
     
     const totalAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString();
 
@@ -86,7 +99,14 @@ const UserReportPage = async ({
             <p>您的使用者 ID Hash: <code>{userId}</code></p>
             <p>目前紀錄總數: **{expenses.length} 筆**。**總金額:** NT$ {totalAmount}</p>
 
-            {/* 🔴 篩選表單：使用 form method="GET" 自動更新 URL 參數 */}
+            {/* 🔴 圓餅圖區域 */}
+            <h2 style={{marginTop: '30px', borderBottom: '2px solid #ddd', paddingBottom: '10px'}}>消費分類圓餅圖</h2>
+            <ChartComponent data={chartData} /> 
+            {/* 🔴 圓餅圖區域結束 */}
+
+            <h2 style={{marginTop: '30px', borderBottom: '2px solid #ddd', paddingBottom: '10px'}}>明細列表</h2>
+
+            {/* 篩選表單：使用 form method="GET" 自動更新 URL 參數 */}
             <form method="GET" style={{ marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <label htmlFor="category">依類別篩選:</label>
                 <select 
